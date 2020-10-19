@@ -9,14 +9,12 @@ import UIKit
 
 class RefeicoesTableViewController: UITableViewController, AddRefeicaoDelegate  {
     
-    var refeicoes = [
-        Refeicao("macarrão", 4),
-        Refeicao("Sushi", 4),
-        Refeicao("Tacos", 3)
-    ]
+    var refeicoes: [Refeicao] = []
     
+ 
     override func viewDidLoad() {
         super.viewDidLoad()
+        refeicoes = RefeicaoDao().recupera()
     }
     
     //DEFINE A QUANTIDADE DE CÉLULAS
@@ -29,14 +27,36 @@ class RefeicoesTableViewController: UITableViewController, AddRefeicaoDelegate  
         let cel = UITableViewCell(style: .default, reuseIdentifier: nil)
         let refeicao = refeicoes[indexPath.row]
         cel.textLabel?.text = refeicao.nome
+        
+        let longPress = UILongPressGestureRecognizer(target: self, action: #selector(mostraDetalhes(_:)))
+        cel.addGestureRecognizer(longPress)
+        
         return cel
     }
     
     func add(_ refeicao: Refeicao){
         refeicoes.append(refeicao)
         tableView.reloadData()
+        RefeicaoDao().save(refeicoes)
     }
     
+    @objc func mostraDetalhes(_ gesture: UILongPressGestureRecognizer){
+        if gesture.state == .began {
+            let celula = gesture.view as! UITableViewCell
+            guard let indexPath = tableView.indexPath(for: celula) else {return}
+            let refeicao = refeicoes[indexPath.row]
+            RemoveRefeicaoViewController(controller: self).exibe(refeicao, handler: { alert in
+                self.refeicoes.remove(at: indexPath.row)
+                self.tableView.reloadData()
+            })
+        }
+    }
+ 
+    func recuperaDiretorio() -> URL? {
+        guard let diretorio = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {return nil}
+        let caminho = diretorio.appendingPathComponent("refeicao")
+        return caminho
+    }
     
     //Função responsável pela preparação para seguir da setinha do storyboard
     //Posso passar coisa para a tela que vai entar
